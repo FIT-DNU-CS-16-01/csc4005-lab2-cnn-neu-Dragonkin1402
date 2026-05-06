@@ -3,22 +3,18 @@
 
 Cấu trúc dự án: 
 .
-├── NEU-CLS/                # Thư mục gốc chứa dữ liệu
-│   └── train/              # Thư mục chứa dữ liệu huấn luyện đã gộp
-│       ├── Crazing/        # Chứa ảnh lỗi nứt bề mặt
-│       ├── Inclusion/      # Chứa ảnh lỗi tạp chất
-│       ├── Patches/        # Chứa ảnh lỗi mảng bám
-│       ├── Pitted_Surface/ # Chứa ảnh lỗi bề mặt rỗ
-│       ├── Rolled-in_Scale/# Chứa ảnh lỗi vảy cán
-│       └── Scratches/      # Chứa ảnh lỗi trầy xước
-├── src/                    # Mã nguồn dự án (train.py, dataset.py,...)
-├── configs/                # Các file cấu hình huấn luyện
-├── docs/                   # Tài liệu hướng dẫn
-├── outputs/                # Nơi lưu trữ kết quả, model checkpoints
-├── wandb/                  # Logs huấn luyện của Weights & Biases
-├── requirements.txt        # Danh sách các thư viện cần cài đặt
-├── README.md               # File hướng dẫn chạy và báo cáo
-└── .venv/                  # Môi trường ảo Python
+├── 📁 NEU-CLS/                  # Dữ liệu hình ảnh
+│   └── 📁 train/                # Dữ liệu đã gộp để huấn luyện
+│       ├── 📁 Crazing/          # Nứt bề mặt
+│       ├── 📁 Inclusion/        # Tạp chất
+│       ├── 📁 Patches/          # Mảng bám
+│       ├── 📁 Pitted_Surface/   # Bề mặt rỗ
+│       ├── 📁 Rolled-in_Scale/  # Vảy cán
+│       └── 📁 Scratches/        # Trầy xước
+├── 📁 src/                      # Mã nguồn (train.py, dataset.py, model.py)
+├── 📁 outputs/                  # Lưu trữ Model Checkpoints
+├── 📄 requirements.txt          # Thư viện cần thiết
+└── 📄 README.md                 # Tài liệu hướng dẫn
 
 Để tái lập kết quả, hãy sử dụng các lệnh sau trong Terminal:
 
