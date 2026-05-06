@@ -1,120 +1,62 @@
-from __future__ import annotations
-
-from typing import Literal
-
 import torch
-from torch import nn
+import torch.nn as nn
+import torchvision.models as models
 
-
-class ConvBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int):
-        super().__init__()
-        self.block = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.block(x)
-
-
-class SmallCNN(nn.Module):
-    def __init__(self, num_classes: int, in_channels: int = 1, dropout: float = 0.3):
-        super().__init__()
+class CNNFromScratch(nn.Module):
+    """
+    Kiến trúc CNN đơn giản (from scratch) để hiểu cách hoạt động của tích chập.
+    """
+    def __init__(self, num_classes: int, dropout: float = 0.3):
+        super(CNNFromScratch, self).__init__()
         self.features = nn.Sequential(
-            ConvBlock(in_channels, 16),
-            ConvBlock(16, 32),
-            ConvBlock(32, 64),
+            # Lớp tích chập 1: Giữ cấu trúc không gian và học đặc trưng cục bộ
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2), # Giảm kích thước ảnh, tăng receptive field
+            
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2)
         )
-        self.pool = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
-            nn.Linear(64, 128),
-            nn.ReLU(inplace=True),
             nn.Dropout(dropout),
-            nn.Linear(128, num_classes),
+            nn.Linear(128, num_classes)
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x):
         x = self.features(x)
-        x = self.pool(x)
-        return self.classifier(x)
+        x = self.classifier(x)
+        return x
 
-
-def _freeze_all_except(module: nn.Module, trainable_prefixes: tuple[str, ...]) -> None:
-    for name, param in module.named_parameters():
-        param.requires_grad = any(name.startswith(prefix) for prefix in trainable_prefixes)
-
-
-def build_torchvision_model(
-    backbone: Literal['resnet18', 'mobilenet_v2', 'vgg11_bn'],
-    num_classes: int,
-    dropout: float = 0.3,
-    pretrained: bool = True,
-    freeze_backbone: bool = True,
-) -> nn.Module:
-    try:
-        from torchvision.models import (
-            MobileNet_V2_Weights,
-            ResNet18_Weights,
-            VGG11_BN_Weights,
-            mobilenet_v2,
-            resnet18,
-            vgg11_bn,
-        )
-    except Exception as exc:  # pragma: no cover - environment-specific
-        raise ImportError(
-            'Transfer learning cần torchvision cài đúng cặp phiên bản với torch. '            'Hãy kiểm tra lại `pip install torch torchvision` hoặc dùng môi trường của môn học.'
-        ) from exc
-
-    if backbone == 'resnet18':
-        weights = ResNet18_Weights.DEFAULT if pretrained else None
-        model = resnet18(weights=weights)
-        in_features = model.fc.in_features
-        model.fc = nn.Sequential(nn.Dropout(dropout), nn.Linear(in_features, num_classes))
-        if freeze_backbone:
-            _freeze_all_except(model, ('fc',))
-        return model
-
-    if backbone == 'mobilenet_v2':
-        weights = MobileNet_V2_Weights.DEFAULT if pretrained else None
-        model = mobilenet_v2(weights=weights)
-        in_features = model.classifier[1].in_features
-        model.classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(in_features, num_classes))
-        if freeze_backbone:
-            _freeze_all_except(model, ('classifier',))
-        return model
-
-    if backbone == 'vgg11_bn':
-        weights = VGG11_BN_Weights.DEFAULT if pretrained else None
-        model = vgg11_bn(weights=weights)
-        in_features = model.classifier[-1].in_features
-        model.classifier[-1] = nn.Linear(in_features, num_classes)
-        if freeze_backbone:
-            _freeze_all_except(model, ('classifier',))
-        return model
-
-    raise ValueError(f'Unsupported backbone: {backbone}')
-
-
-def build_model(
-    model_name: str,
-    train_mode: str,
-    num_classes: int,
-    dropout: float = 0.3,
-) -> nn.Module:
+def get_model(model_name: str, num_classes: int, train_mode: str, dropout: float = 0.3):
+    """
+    Hàm khởi tạo mô hình dựa trên tham số truyền vào.
+    """
     if model_name == 'cnn_small':
-        return SmallCNN(num_classes=num_classes, in_channels=1, dropout=dropout)
-
-    if train_mode not in {'transfer', 'finetune'}:
-        raise ValueError('Với backbone pretrained, train_mode phải là transfer hoặc finetune.')
-    freeze_backbone = train_mode == 'transfer'
-    return build_torchvision_model(
-        backbone=model_name,
-        num_classes=num_classes,
-        dropout=dropout,
-        pretrained=True,
-        freeze_backbone=freeze_backbone,
-    )
+        return CNNFromScratch(num_classes, dropout)
+    
+    elif model_name == 'resnet18':
+        # Tải mô hình ResNet18 đã được huấn luyện sẵn (Pretrained)
+        model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        
+        if train_mode == 'transfer':
+            # Đóng băng (Freeze) toàn bộ backbone để chỉ học classifier head[cite: 1]
+            for param in model.parameters():
+                param.requires_grad = False
+        
+        # Thay thế lớp cuối cùng (FC layer) cho phù hợp với 6 lớp lỗi bề mặt thép[cite: 1]
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(num_ftrs, num_classes)
+        )
+        return model
+    
+    else:
+        raise ValueError(f"Không hỗ trợ mô hình: {model_name}")

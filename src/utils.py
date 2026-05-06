@@ -34,12 +34,6 @@ def compute_accuracy(y_true: Iterable[int], y_pred: Iterable[int]) -> float:
     return correct / len(y_true)
 
 
-def count_parameters(model: torch.nn.Module) -> tuple[int, int]:
-    total = sum(p.numel() for p in model.parameters())
-    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    return total, trainable
-
-
 @dataclass
 class EarlyStopping:
     patience: int = 5
