@@ -3,7 +3,7 @@
 ## 1. Thông tin chung
 - Họ và tên: Nguyễn Mạnh Cường 
 - Lớp: KHMT 1701
-- Repo: 
+- Repo: https://github.com/FIT-DNU-CS-16-01/csc4005-lab2-cnn-neu-Dragonkin1402.git
 - W&B project: https://wandb.ai/nmanhcuong1402-dnu/csc4005-lab2-neu-cnn/runs/eme37dnx
 
 ## 2. Bài toán
